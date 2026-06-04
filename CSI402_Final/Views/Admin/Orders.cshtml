@@ -1,0 +1,140 @@
+@using CSI402_Final.Models.DB
+@model IEnumerable<Order>
+
+@{
+    ViewData["Title"] = "Order Management";
+    ViewData["ActivePage"] = "Orders";
+    Layout = "~/Views/Shared/_Navbar/_AdminNavbar.cshtml";
+
+    string? currentFilter = ViewBag.StatusFilter;
+}
+
+<style>
+    .filter-bar { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+    .filter-btn { padding:7px 16px; border-radius:20px; font-size:13px; font-weight:500; border:1.5px solid var(--border); background:white; color:var(--muted); cursor:pointer; text-decoration:none; transition:all 0.2s; }
+    .filter-btn:hover, .filter-btn.active { border-color:var(--sage-dark); color:var(--sage-dark); background:var(--cream); }
+    
+    /* สไตล์เพิ่มเติมสำหรับปุ่ม View */
+    .btn-view {
+        display:inline-flex; align-items:center; gap:5px;
+        padding:6px 14px; border-radius:8px;
+        background:#f0f4f0; color:#3d5940;
+        font-size:12px; font-weight:600; text-decoration:none;
+        border:1px solid #d8e0d6; transition:all .2s;
+    }
+    .btn-view:hover {
+        background:#3d5940; color:white;
+    }
+</style>
+
+@if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">All Orders <span style="font-size:14px;color:var(--muted);font-family:'DM Sans',sans-serif;font-weight:400">(@Model.Count())</span></div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center">
+        <input type="text" id="orderSearch" class="form-control" placeholder="🔍  Search by Order ID or Customer email…" style="max-width:360px" oninput="filterOrders()" />
+    </div>
+
+    <div class="filter-bar">
+        @foreach (var f in new[] { (null,"All"), ("pending","Pending"), ("processing","Processing"), ("shipped","Shipped"), ("completed","Completed"), ("cancelled","Cancelled") })
+        {
+            <a href="/Admin/Orders@(f.Item1 != null ? "?status=" + f.Item1 : "")"
+               class="filter-btn @(currentFilter == f.Item1 ? "active" : "")">@f.Item2</a>
+        }
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Ship To</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Action</th>
+                <th>Detail</th> @* 1. เพิ่มหัวข้อคอลัมน์ที่นี่ *@
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in Model)
+            {
+                <tr>
+                    <td style="font-size:12px;color:var(--muted);font-family:monospace">
+                        #@(o.OrderId != null ? o.OrderId.Substring(0, Math.Min(8, o.OrderId.Length)) : "—")
+                    </td>
+                    <td style="font-size:13px">@(o.User?.Email ?? "—")</td>
+                    <td style="font-size:12px;color:var(--muted)">
+                        @if (!string.IsNullOrEmpty(o.ShippingName))
+                        {
+                            <div>@o.ShippingName</div>
+                            <div>@o.ShippingAddress</div>
+                        }
+                        else { <span>—</span> }
+                    </td>
+                    <td style="font-size:13px;color:var(--muted)">@o.CreatedAt?.ToString("dd MMM yyyy")</td>
+                    <td style="font-weight:500">฿@String.Format("{0:N0}", o.TotalPrice)</td>
+                    <td>
+                        @{ var os = (o.Status ?? "").ToLower(); }
+                        <span class="badge @(os=="completed"?"badge-success":os=="pending"?"badge-warning":os=="cancelled"?"badge-danger":"badge-muted")">
+                            @o.Status
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-outline btn-sm" onclick="openStatusModal('@o.OrderId','@o.Status')">
+                            Update
+                        </button>
+                    </td>
+                    @* 2. เพิ่มปุ่ม View เข้าไปในแต่ละแถว *@
+                    <td>
+                        <a href="/Admin/OrderDetail/@o.OrderId" class="btn-view">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal-overlay" id="statusModal">
+    <div class="modal-box" style="width:360px">
+        <div class="modal-title">Update Order Status</div>
+        <form method="post" action="/Admin/UpdateOrderStatus">
+            <input type="hidden" name="orderId" id="sm-order-id" />
+            <div class="form-group">
+                <label>New Status</label>
+                <select name="status" id="sm-status" class="form-control">
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('statusModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Update</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function filterOrders() {
+    const q = document.getElementById('orderSearch').value.trim().toLowerCase();
+    document.querySelectorAll('tbody tr').forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = !q || text.includes(q) ? '' : 'none';
+    });
+}
+
+function openStatusModal(orderId, current) {
+    document.getElementById('sm-order-id').value = orderId;
+    document.getElementById('sm-status').value = current || 'pending';
+    openModal('statusModal');
+}
+</script>

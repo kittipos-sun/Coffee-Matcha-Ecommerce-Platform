@@ -1,0 +1,255 @@
+@model List<CSI402_Final.Models.DB.Order>
+
+@{
+    ViewData["Title"] = "Track Orders";
+    Layout = "~/Views/Shared/_Navbar/_UserNavbar.cshtml";
+}
+
+<style>
+    :root {
+        --sage:       #5a7a5e;
+        --sage-dark:  #3d5940;
+        --sage-light: #8aab8e;
+        --cream:      #f7f4ef;
+        --warm-white: #fefcf8;
+        --ink:        #1e2420;
+        --muted:      #7a8878;
+        --border:     #d8e0d6;
+    }
+
+    body { font-family: 'DM Sans', sans-serif; background: var(--warm-white); color: var(--ink); }
+
+    .track-container {
+        max-width: 1000px;
+        margin: auto;
+        padding: 40px 20px;
+    }
+
+    .track-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 32px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 28px;
+    }
+
+    .order-card {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        background: #fff;
+        box-shadow: 0 2px 12px rgba(30,36,32,0.06);
+    }
+
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+
+    .order-id {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+    .order-date {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 4px;
+    }
+
+    .status {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 5px 14px;
+        border-radius: 100px;
+        display: inline-block;
+    }
+
+    .pending   { background: #fef3c7; color: #92400e; }
+    .shipped   { background: #dbeafe; color: #1e40af; }
+    .delivered { background: #d1fae5; color: #065f46; }
+
+    .product-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--border);
+        padding: 12px 0;
+    }
+
+    .product-row:last-of-type {
+        border-bottom: none;
+    }
+
+    .product-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+    }
+
+    .product-thumb {
+        width: 52px;
+        height: 52px;
+        border-radius: 10px;
+        overflow: hidden;
+        background: linear-gradient(145deg, #e0e8e1, #c8d8ca);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .product-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        position: absolute;
+        inset: 0;
+        border-radius: 10px;
+    }
+
+    .product-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--ink);
+    }
+
+    .product-qty {
+        font-size: 12px;
+        color: var(--muted);
+        white-space: nowrap;
+    }
+
+    .product-price {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 17px;
+        font-weight: 600;
+        color: var(--sage-dark);
+        white-space: nowrap;
+    }
+
+    .order-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 16px 0;
+    }
+
+    .order-total {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        color: var(--muted);
+    }
+
+    .order-total strong {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--sage-dark);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        color: var(--muted);
+    }
+
+    .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+
+    .empty-state p {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 22px;
+        font-style: italic;
+    }
+</style>
+
+<div class="track-container">
+    <h2 class="track-title">📦 Order Tracking</h2>
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-state-icon">🛍️</div>
+            <p>No orders found.</p>
+        </div>
+    }
+    else
+    {
+        foreach (var order in Model)
+        {
+            var statusClass = order.Status?.ToLower() switch
+            {
+                "pending"   => "pending",
+                "shipped"   => "shipped",
+                "delivered" => "delivered",
+                _           => "pending"
+            };
+
+            <div class="order-card">
+                <div class="order-header">
+                    <div>
+                        <div class="order-id">Order #@order.OrderId.Substring(0, 8).ToUpper()</div>
+                        <div class="order-date">@order.CreatedAt</div>
+                    </div>
+                    <div class="status @statusClass">@order.Status</div>
+                </div>
+
+                <div class="order-divider"></div>
+
+                <!-- Items -->
+                @foreach (var item in order.OrdersItems)
+                {
+                    var prod    = item.ProductOption?.Product;
+                    var imgType = prod?.ProductType?.ToLower() ?? "";
+
+                    bool hasProductImg = !string.IsNullOrEmpty(prod?.ProductImage) && prod.ProductImage != "img";
+                    string defaultImgUrl = imgType.Contains("coffee")
+                        ? Url.Content("~/images/coffee-beans.jpg")
+                        : imgType.Contains("matcha")
+                        ? Url.Content("~/images/matcha-powder.jpg")
+                        : Url.Content("~/images/brewing-equipment.jpg");
+                    string imgUrl = hasProductImg ? prod.ProductImage : defaultImgUrl;
+
+                    string emoji = imgType.Contains("coffee") ? "☕"
+                                 : imgType.Contains("matcha") ? "🍵"
+                                 : "🔧";
+
+                    <div class="product-row">
+                        <div class="product-info">
+                            <div class="product-thumb">
+                                <img src="@imgUrl" alt="@prod?.ProductName"
+                                     onerror="this.src='@defaultImgUrl'" />
+                                @if (!hasProductImg)
+                                {
+                                    <span>@emoji</span>
+                                }
+                            </div>
+                            <div class="product-name">@prod?.ProductName</div>
+                        </div>
+                        <div class="product-qty">× @item.Amount</div>
+                        <div class="product-price">@((item.Price ?? 0).ToString("N0")) ฿</div>
+                    </div>
+                }
+
+                <div class="order-divider"></div>
+
+                <div class="order-total">
+                    <span>Total</span>
+                    <strong>@order.TotalPrice?.ToString("N0") ฿</strong>
+                </div>
+            </div>
+        }
+    }
+</div>

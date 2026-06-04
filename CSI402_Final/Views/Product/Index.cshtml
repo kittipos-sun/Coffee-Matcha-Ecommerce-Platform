@@ -1,0 +1,533 @@
+@model List<CSI402_Final.Models.DB.Product>
+
+@{
+    ViewData["Title"] = "Products";
+    Layout = "~/Views/Shared/_Navbar/_UserNavbar.cshtml";
+}
+
+<style>
+    :root {
+        --sage: #5a7a5e;
+        --sage-dark: #3d5940;
+        --sage-light: #8aab8e;
+        --cream: #f7f4ef;
+        --warm-white: #fefcf8;
+        --ink: #1e2420;
+        --muted: #7a8878;
+        --border: #d8e0d6;
+        --section-bg: #f3f0eb;
+    }
+
+    .page-header {
+        background: var(--sage-dark);
+        padding: 56px 60px 52px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: -80px; right: -80px;
+        width: 300px; height: 300px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.04);
+    }
+
+    .page-header::after {
+        content: '';
+        position: absolute;
+        bottom: -50px; left: 30%;
+        width: 200px; height: 200px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.03);
+    }
+
+    .header-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: 24px;
+    }
+
+    .header-label {
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--sage-light);
+        font-weight: 500;
+        margin-bottom: 10px;
+    }
+
+    .header-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 42px;
+        font-weight: 600;
+        color: white;
+        margin: 0;
+        line-height: 1.05;
+    }
+
+    .header-sub {
+        font-size: 14px;
+        color: rgba(255,255,255,0.55);
+        margin-top: 8px;
+        font-weight: 300;
+    }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+        background: white;
+        border-bottom: 1px solid var(--border);
+        padding: 0 60px;
+        @* position: sticky; *@
+        top: 72px;
+        z-index: 50;
+    }
+
+    .toolbar-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        height: 60px;
+    }
+
+    /* Filter chips */
+    .filter-chips {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+
+    .chip {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 12px;
+        font-weight: 400;
+        color: var(--muted);
+        background: transparent;
+        border: 1.5px solid var(--border);
+        border-radius: 100px;
+        padding: 5px 16px;
+        cursor: pointer;
+        transition: all 0.2s;
+        letter-spacing: 0.02em;
+    }
+
+    .chip:hover {
+        border-color: var(--sage);
+        color: var(--sage-dark);
+    }
+
+    .chip.active {
+        background: var(--sage-dark);
+        border-color: var(--sage-dark);
+        color: white;
+        font-weight: 500;
+    }
+
+    /* Search */
+    .search-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 12px;
+        color: var(--muted);
+        font-size: 14px;
+        pointer-events: none;
+    }
+
+    .search-input {
+        height: 38px;
+        width: 240px;
+        border: 1.5px solid var(--border);
+        border-radius: 100px;
+        background: var(--cream);
+        padding: 0 14px 0 36px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13px;
+        color: var(--ink);
+        outline: none;
+        transition: all 0.2s;
+    }
+
+    .search-input:focus {
+        border-color: var(--sage);
+        background: white;
+        box-shadow: 0 0 0 3px rgba(90,122,94,0.10);
+        width: 280px;
+    }
+
+    .search-input::placeholder { color: var(--muted); }
+
+    /* ── PRODUCT AREA ── */
+    .product-area {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 60px 80px;
+    }
+
+    .result-count {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 28px;
+    }
+
+    .result-count strong { color: var(--ink); font-weight: 500; }
+
+    /* ── PRODUCT GRID ── */
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+    }
+
+    .product-card {
+        background: white;
+        border-radius: 18px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        transition: all 0.28s;
+        text-decoration: none;
+        color: var(--ink);
+        display: block;
+    }
+
+    .product-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 20px 48px rgba(30,36,32,0.10);
+        text-decoration: none;
+        color: var(--ink);
+        border-color: transparent;
+    }
+
+    .product-img {
+        height: 240px;
+        overflow: hidden;
+        position: relative;
+        background: var(--section-bg);
+    }
+
+    .product-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.45s ease;
+    }
+
+    .product-card:hover .product-img img { transform: scale(1.06); }
+
+    .product-badge {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background: rgba(254,252,248,0.92);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--sage-dark);
+        font-weight: 500;
+        padding: 4px 10px;
+        border-radius: 100px;
+        backdrop-filter: blur(4px);
+    }
+
+    .product-body {
+        padding: 20px 20px 22px;
+    }
+
+    .product-name {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--ink);
+        line-height: 1.2;
+        margin-bottom: 6px;
+    }
+
+    .product-desc {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.6;
+        font-weight: 300;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        margin-bottom: 14px;
+    }
+
+    .product-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
+    }
+
+    .view-link {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--sage);
+        letter-spacing: 0.04em;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 80px 20px;
+        color: var(--muted);
+    }
+
+    .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+
+    .empty-state p {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 22px;
+        font-weight: 400;
+        font-style: italic;
+        color: var(--muted);
+    }
+
+    /* ── RESPONSIVE ── */
+    @@media (max-width: 1024px) {
+        .product-grid { grid-template-columns: repeat(2, 1fr); }
+        .page-header, .product-area { padding-left: 32px; padding-right: 32px; }
+        .toolbar { padding: 0 32px; }
+    }
+
+    @@media (max-width: 640px) {
+        .product-grid { grid-template-columns: 1fr; }
+        .page-header { padding: 40px 24px; }
+        .product-area { padding: 28px 24px 60px; }
+        .toolbar { padding: 0 24px; }
+        .toolbar-inner { flex-direction: column; height: auto; padding: 14px 0; gap: 10px; }
+        .search-input { width: 100%; }
+        .search-input:focus { width: 100%; }
+        .header-title { font-size: 32px; }
+    }
+</style>
+
+<div class="page-header">
+    <div class="header-inner">
+        <div>
+            <div class="header-label">Curated Selection</div>
+            <h1 class="header-title">All Products</h1>
+            <p class="header-sub">Browse our coffee, matcha and brewing equipment</p>
+        </div>
+    </div>
+</div>
+
+<div class="toolbar">
+    <div class="toolbar-inner">
+
+        @* <div class="filter-chips">
+            <button class="chip active" onclick="filterCategory('all', this)">All</button>
+            <button class="chip" onclick="filterCategory('coffee', this)">Coffee</button>
+            <button class="chip" onclick="filterCategory('matcha', this)">Matcha</button>
+            <button class="chip" onclick="filterCategory('equipment', this)">Equipment</button>
+        </div> *@
+
+        <!-- 🔥 RIGHT SIDE -->
+        <div style="display:flex; gap:10px; align-items:center;">
+
+            <!-- SEARCH -->
+            <div class="search-wrap">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="searchInput" class="search-input" placeholder="Search products…" />
+            </div>
+
+            <!-- 🔥 DYNAMIC DROPDOWN -->
+            <select id="detailFilter" class="chip" style="height:38px;">
+                <option value="all">All Details</option>
+
+                @{
+                    var filters = Model
+                        .SelectMany(p => new string[] {
+                            p.ProductCoffeeDetail?.RoastLevel,
+                            p.ProductMatchaDetail?.Grade,
+                            p.ProductEquipmentDetail?.Material
+                        })
+                        .Where(x => !string.IsNullOrEmpty(x))
+                        .Distinct()
+                        .ToList();
+                }
+
+                @foreach (var f in filters)
+                {
+                    <option value="@f.ToLower()">@f</option>
+                }
+            </select>
+
+        </div>
+
+    </div>
+</div>
+
+<div class="product-area">
+
+    <div class="result-count">
+        Showing <strong id="resultCount">@Model.Count</strong> products
+    </div>
+
+    <div class="product-grid" id="productGrid">
+
+        @foreach (var item in Model)
+        {
+            var type = item.ProductType?.ToLower() ?? "";
+
+            bool hasImage = !string.IsNullOrEmpty(item.ProductImage) && item.ProductImage != "img";
+
+            string defaultImageUrl = type.Contains("coffee")
+                ? Url.Content("~/images/coffee-beans.jpg")
+                : type.Contains("matcha")
+                ? Url.Content("~/images/matcha-powder.jpg")
+                : Url.Content("~/images/brewing-equipment.jpg");
+
+            string imageUrl = hasImage ? item.ProductImage : defaultImageUrl;
+
+            // 🔥 BUILD DETAIL TEXT
+            var detailText = "";
+
+            if (item.ProductCoffeeDetail != null)
+            {
+                detailText += item.ProductCoffeeDetail.RoastLevel + " ";
+                detailText += item.ProductCoffeeDetail.Origin;
+            }
+
+            if (item.ProductMatchaDetail != null)
+            {
+                detailText += item.ProductMatchaDetail.Grade + " ";
+            }
+
+            if (item.ProductEquipmentDetail != null)
+            {
+                detailText += item.ProductEquipmentDetail.Material;
+            }
+
+            detailText = detailText.ToLower();
+
+            <a href="/Product/Detail/@item.ProductId"
+               class="product-card"
+               data-name="@item.ProductName?.ToLower()"
+               data-type="@type"
+               data-detail="@detailText">
+
+                <div class="product-img">
+                    <img src="@imageUrl" alt="@item.ProductName" />
+                    <div class="product-badge">@item.ProductType</div>
+                </div>
+
+                <div class="product-body">
+                    <div class="product-name">@item.ProductName</div>
+
+                    @if (!string.IsNullOrEmpty(item.ProductDescription))
+                    {
+                        <div class="product-desc">@item.ProductDescription</div>
+                    }
+
+                    <!-- DETAIL -->
+                    <div style="font-size:12px; color:#7a8878; margin-bottom:10px;">
+                        @if (item.ProductType == "COFFEE" && item.ProductCoffeeDetail != null)
+                        {
+                            <div>Roast: @item.ProductCoffeeDetail.RoastLevel</div>
+                            <div>Origin: @item.ProductCoffeeDetail.Origin</div>
+                        }
+
+                        @if (item.ProductType == "MATCHA" && item.ProductMatchaDetail != null)
+                        {
+                            <div>Grade: @item.ProductMatchaDetail.Grade</div>
+                        }
+
+                        @if (item.ProductType == "EQUIPMENT" && item.ProductEquipmentDetail != null)
+                        {
+                            <div>Material: @item.ProductEquipmentDetail.Material</div>
+                        }
+                    </div>
+
+                    <!-- PRICE -->
+                    @if (item.ProductOptions != null && item.ProductOptions.Any())
+                    {
+                        var minPrice = item.ProductOptions.Min(o => o.ProductPrice);
+                        <div style="font-size:13px; font-weight:500; color:#3d5940;">
+                            From @minPrice ฿
+                        </div>
+                    }
+
+                    <div class="product-footer">
+                        <span class="view-link">View details →</span>
+                    </div>
+                </div>
+
+            </a>
+        }
+
+    </div>
+
+</div>
+
+<script>
+    const searchInput = document.getElementById("searchInput");
+    const detailFilter = document.getElementById("detailFilter");
+    const cards = document.querySelectorAll(".product-card");
+    const resultCount = document.getElementById("resultCount");
+
+    let currentFilter = "all";
+    let currentSearch = "";
+    let currentDetail = "all";
+
+    function updateVisibility() {
+        let visible = 0;
+
+        cards.forEach(c => {
+            const name = c.getAttribute("data-name") || "";
+            const type = c.getAttribute("data-type") || "";
+            const detail = c.getAttribute("data-detail") || "";
+
+            const matchSearch = name.includes(currentSearch);
+            const matchFilter = currentFilter === "all" || type.includes(currentFilter);
+            const matchDetail = currentDetail === "all" || detail.includes(currentDetail);
+
+            if (matchSearch && matchFilter && matchDetail) {
+                c.style.display = "block";
+                visible++;
+            } else {
+                c.style.display = "none";
+            }
+        });
+
+        resultCount.textContent = visible;
+    }
+
+    searchInput.addEventListener("input", function () {
+        currentSearch = this.value.toLowerCase();
+        updateVisibility();
+    });
+
+    detailFilter.addEventListener("change", function () {
+        currentDetail = this.value.toLowerCase();
+        updateVisibility();
+    });
+
+    function filterCategory(cat, el) {
+        currentFilter = cat;
+        document.querySelectorAll(".chip").forEach(b => b.classList.remove("active"));
+        el.classList.add("active");
+        updateVisibility();
+    }
+</script>

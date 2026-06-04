@@ -1,0 +1,427 @@
+@model CSI402_Final.Models.DB.Product
+
+@{
+    ViewData["Title"] = "Product Detail";
+    Layout = "~/Views/Shared/_Navbar/_UserNavbar.cshtml";
+}
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+        --sage: #5a7a5e;
+        --sage-dark: #3d5940;
+        --sage-light: #8aab8e;
+        --cream: #f7f4ef;
+        --warm-white: #fefcf8;
+        --ink: #1e2420;
+        --muted: #7a8878;
+        --border: #d8e0d6;
+    }
+
+    body { font-family: 'DM Sans', sans-serif; background: var(--warm-white); color: var(--ink); }
+
+    .detail-page { padding: 40px 60px 80px; max-width: 1100px; margin: 0 auto; }
+
+    /* Back link */
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--muted);
+        text-decoration: none;
+        margin-bottom: 36px;
+        transition: color 0.2s;
+        letter-spacing: 0.02em;
+    }
+
+    .back-link:hover { color: var(--sage-dark); text-decoration: none; }
+
+    .back-link::before { content: '←'; font-size: 16px; }
+
+    /* Grid layout */
+    .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 60px;
+        align-items: start;
+    }
+
+    /* Image box */
+    .img-box {
+        border-radius: 24px;
+        overflow: hidden;
+        background: linear-gradient(145deg, #e0e8e1, #c8d8ca);
+        aspect-ratio: 1 / 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 100px;
+        position: relative;
+        box-shadow: 0 8px 40px rgba(61, 89, 64, 0.12);
+    }
+
+    .img-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        position: absolute;
+        inset: 0;
+        border-radius: 24px;
+    }
+
+    /* Info section */
+    .product-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--sage);
+        font-weight: 500;
+        background: rgba(90,122,94,0.10);
+        padding: 5px 12px;
+        border-radius: 100px;
+        margin-bottom: 16px;
+    }
+
+    .product-name {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 40px;
+        font-weight: 600;
+        color: var(--ink);
+        line-height: 1.1;
+        margin: 0 0 20px;
+    }
+
+    .product-desc {
+        font-size: 14px;
+        color: var(--muted);
+        line-height: 1.75;
+        font-weight: 300;
+        border-left: 2px solid var(--border);
+        padding-left: 16px;
+        margin-bottom: 32px;
+    }
+
+    /* Divider */
+    .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 28px 0;
+    }
+
+    /* Options */
+    .option-label {
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 500;
+        margin-bottom: 12px;
+    }
+
+    .option-box { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .option-btn {
+        padding: 10px 20px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border);
+        background: var(--cream);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13px;
+        font-weight: 400;
+        color: var(--ink);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .option-btn:hover {
+        border-color: var(--sage);
+        color: var(--sage-dark);
+    }
+
+    .option-btn.active {
+        background: var(--sage-dark);
+        color: white;
+        border-color: var(--sage-dark);
+        font-weight: 500;
+    }
+
+    /* Price display */
+    .price-wrap { margin-top: 24px; }
+
+    .price-label {
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 500;
+        margin-bottom: 6px;
+    }
+
+    .price {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 44px;
+        font-weight: 600;
+        color: var(--sage-dark);
+        line-height: 1;
+    }
+
+    .price span { font-size: 20px; font-weight: 400; color: var(--muted); margin-left: 6px; }
+
+    .price-placeholder {
+        font-size: 16px;
+        color: var(--muted);
+        font-weight: 300;
+        font-style: italic;
+        font-family: 'Cormorant Garamond', serif;
+    }
+
+    /* Add to cart */
+    .cart-row {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 12px;
+        align-items: stretch;
+        margin-top: 24px;
+    }
+
+    .qty-wrap {
+        display: flex;
+        align-items: center;
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        background: var(--cream);
+        overflow: hidden;
+        height: 52px;
+    }
+
+    .qty-btn {
+        width: 44px;
+        height: 100%;
+        border: none;
+        background: transparent;
+        font-size: 20px;
+        color: var(--muted);
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'DM Sans', sans-serif;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+
+    .qty-btn:hover {
+        background: var(--border);
+        color: var(--ink);
+    }
+
+    .qty-num {
+        width: 44px;
+        text-align: center;
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--ink);
+        border: none;
+        background: transparent;
+        font-family: 'DM Sans', sans-serif;
+        pointer-events: none;
+        flex-shrink: 0;
+    }
+
+    .btn-cart {
+        height: 52px;
+        border: none;
+        border-radius: 12px;
+        background: var(--sage-dark);
+        color: white;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        cursor: pointer;
+        transition: all 0.25s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .btn-cart:hover {
+        background: var(--sage);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 28px rgba(61, 89, 64, 0.25);
+    }
+
+    .trust-note {
+        display: flex;
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .trust-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    @@media (max-width: 768px) {
+        .detail-page { padding: 24px 20px 60px; }
+        .detail-grid { grid-template-columns: 1fr; gap: 32px; }
+        .product-name { font-size: 32px; }
+    }
+</style>
+
+<div class="detail-page">
+
+    <a href="/Product" class="back-link">Back to Collection</a>
+
+    <div class="detail-grid">
+
+        <div class="img-box">
+            @{
+                var typeCheck = Model.ProductType?.ToLower() ?? "";
+                bool hasProductImage = !string.IsNullOrEmpty(Model.ProductImage) && Model.ProductImage != "img";
+
+                string defaultImg = typeCheck.Contains("coffee")
+                    ? Url.Content("~/images/coffee-beans.jpg")
+                    : typeCheck.Contains("matcha")
+                    ? Url.Content("~/images/matcha-powder.jpg")
+                    : Url.Content("~/images/brewing-equipment.jpg");
+
+                string detailImg = hasProductImage ? Model.ProductImage : defaultImg;
+
+                string emoji = typeCheck.Contains("coffee") ? "☕"
+                             : typeCheck.Contains("matcha") ? "🍵"
+                             : "🔧";
+            }
+            <img src="@detailImg" alt="@Model.ProductName" onerror="this.style.display='none'" />
+            @if (!hasProductImage)
+            {
+                <span>@emoji</span>
+            }
+        </div>
+
+        <div>
+            <div class="product-tag">@Model.ProductType</div>
+            <h1 class="product-name">@Model.ProductName</h1>
+
+            @if (!string.IsNullOrEmpty(Model.ProductDescription))
+            {
+                <p class="product-desc">@Model.ProductDescription</p>
+            }
+
+            <div class="divider"></div>
+
+            <div class="option-label">Select Option</div>
+            <div class="option-box">
+                @foreach (var opt in Model.ProductOptions)
+                {
+                    <button type="button"
+                            class="option-btn"
+                            onclick="selectOption('@opt.ProductOptionId', '@opt.ProductPrice')">
+                        @opt.ProductAmount @opt.ProductUnit
+                    </button>
+                }
+            </div>
+
+            <div class="price-wrap">
+                <div class="price-label">Price</div>
+                <div id="priceDisplay" class="price-placeholder">Select an option above</div>
+            </div>
+
+    <!-- 🔥 ADD: DETAIL SECTION -->
+    <div style="margin-bottom:20px; font-size:14px; color:#555;">
+
+        @if (Model.ProductType == "COFFEE")
+        {
+            <div><b>Roast:</b> @Model.ProductCoffeeDetail?.RoastLevel</div>
+            <div><b>Flavor:</b> @Model.ProductCoffeeDetail?.FlavorNote</div>
+            <div><b>Origin:</b> @Model.ProductCoffeeDetail?.Origin</div>
+        }
+
+        @if (Model.ProductType == "MATCHA")
+        {
+            <div><b>Grade:</b> @Model.ProductMatchaDetail?.Grade</div>
+            <div><b>Color:</b> @Model.ProductMatchaDetail?.ColorLevel</div>
+        }
+
+        @if (Model.ProductType == "EQUIPMENT")
+        {
+            <div><b>Material:</b> @Model.ProductEquipmentDetail?.Material</div>
+            <div><b>Brand:</b> @Model.ProductEquipmentDetail?.Brand</div>
+        }
+
+    </div>
+
+            <div class="divider"></div>
+
+            <form method="post" action="/Cart/AddToCart">
+                <input type="hidden" name="productOptionId" id="selectedOption" />
+                <input type="hidden" name="quantity" id="quantityInput" value="1" />
+
+                <div class="cart-row">
+                    <div class="qty-wrap">
+                        <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
+                        <span class="qty-num" id="qtyDisplay">1</span>
+                        <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
+                    </div>
+
+                    <button type="submit" class="btn-cart">
+                        <i class="bi bi-bag-plus"></i> Add to Cart
+                    </button>
+                </div>
+            </form>
+
+            <div class="trust-note">
+                <div class="trust-item">✓ Direct trade sourced</div>
+                <div class="trust-item">✓ Freshly packed</div>
+                <div class="trust-item">✓ Free shipping 500฿+</div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    let selectedId = null;
+    let basePrice = 0;
+    let qty = 1;
+
+    function updatePriceDisplay() {
+        const priceEl = document.getElementById("priceDisplay");
+        if (basePrice > 0) {
+            const total = basePrice * qty;
+            priceEl.className = "price";
+            priceEl.innerHTML = total.toLocaleString() + '<span>฿</span>';
+        }
+    }
+
+    function changeQty(delta) {
+        qty = Math.max(1, qty + delta);
+        document.getElementById("qtyDisplay").textContent = qty;
+        document.getElementById("quantityInput").value = qty;
+        updatePriceDisplay();
+    }
+
+    function selectOption(id, price) {
+        selectedId = id;
+        basePrice = parseFloat(price);
+
+        document.getElementById("selectedOption").value = id;
+
+        document.querySelectorAll(".option-btn").forEach(btn => btn.classList.remove("active"));
+        event.target.classList.add("active");
+
+        updatePriceDisplay();
+    }
+</script>

@@ -1,0 +1,591 @@
+@using CSI402_Final.Models.ViewModels
+@model CheckoutViewModel
+@{
+    ViewData["Title"] = "Checkout";
+    Layout = "~/Views/Shared/_Navbar/_UserNavbar.cshtml";
+}
+
+<style>
+    :root {
+        --sage:       #5a7a5e;
+        --sage-dark:  #3d5940;
+        --sage-light: #8aab8e;
+        --cream:      #f7f4ef;
+        --warm-white: #fefcf8;
+        --ink:        #1e2420;
+        --muted:      #7a8878;
+        --border:     #d8e0d6;
+        --section-bg: #f3f0eb;
+        --danger:     #c0392b;
+        --success:    #2d7a4f;
+    }
+
+    body { font-family: 'DM Sans', sans-serif; background: var(--warm-white); color: var(--ink); }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+        background: var(--sage-dark);
+        padding: 48px 60px 44px;
+        position: relative;
+        overflow: hidden;
+    }
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: -80px; right: -80px;
+        width: 300px; height: 300px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.04);
+        pointer-events: none;
+    }
+    .header-inner { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+    .header-label { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--sage-light); font-weight: 500; margin-bottom: 10px; }
+    .header-title { font-family: 'Cormorant Garamond', serif; font-size: 40px; font-weight: 600; color: white; margin: 0; line-height: 1.05; }
+    .header-sub   { font-size: 14px; color: rgba(255,255,255,0.5); margin-top: 8px; font-weight: 300; }
+
+    /* ── LAYOUT ── */
+    .checkout-page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 48px 60px 80px;
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 40px;
+        align-items: start;
+    }
+
+    /* ── CARD ── */
+    .card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 32px;
+        margin-bottom: 24px;
+    }
+    .card:last-child { margin-bottom: 0; }
+
+    .card-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 28px;
+    }
+    .card-title i { color: var(--sage); font-size: 18px; }
+
+    /* ── FORM GRID ── */
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+
+    .form-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--ink);
+        letter-spacing: 0.04em;
+    }
+    .form-label span { color: var(--danger); margin-left: 2px; }
+
+    .form-control {
+        height: 46px;
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        padding: 0 14px;
+        font-size: 14px;
+        font-family: 'DM Sans', sans-serif;
+        color: var(--ink);
+        background: var(--cream);
+        outline: none;
+        transition: border-color 0.2s;
+    }
+    .form-control:focus { border-color: var(--sage); background: white; }
+    .form-control::placeholder { color: #bac5b8; }
+
+    /* ── RIGHT COLUMN ── */
+    .right-col { position: sticky; top: 108px; display: flex; flex-direction: column; gap: 24px; }
+
+    /* ── COUPON ── */
+    .coupon-row { display: flex; gap: 10px; }
+    .coupon-input {
+        flex: 1;
+        height: 46px;
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        padding: 0 14px;
+        font-size: 13px;
+        font-family: 'DM Sans', sans-serif;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        background: var(--cream);
+        outline: none;
+        transition: border-color 0.2s;
+        color: var(--ink);
+    }
+    .coupon-input:focus { border-color: var(--sage); background: white; }
+    .coupon-input::placeholder { text-transform: none; letter-spacing: 0; color: #bac5b8; }
+
+    .btn-apply {
+        height: 46px;
+        padding: 0 20px;
+        border: 1.5px solid var(--sage-dark);
+        border-radius: 10px;
+        background: white;
+        color: var(--sage-dark);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .btn-apply:hover { background: var(--sage-dark); color: white; }
+
+    .coupon-msg {
+        margin-top: 10px;
+        font-size: 12px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        line-height: 1.5;
+    }
+    .coupon-msg.success { background: rgba(45,122,79,0.09); color: var(--success); border: 1px solid rgba(45,122,79,0.2); }
+    .coupon-msg.error   { background: rgba(192,57,43,0.08); color: var(--danger);  border: 1px solid rgba(192,57,43,0.15); }
+
+    /* coupon type badge */
+    .coupon-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        padding: 2px 8px;
+        border-radius: 20px;
+        margin-bottom: 4px;
+    }
+    .badge-percent  { background: #eaf3ff; color: #2563eb; }
+    .badge-fixed    { background: #fef3e2; color: #b45309; }
+    .badge-freeship { background: #ecfdf5; color: #059669; }
+    .badge-bogo     { background: #fdf4ff; color: #7c3aed; }
+    .badge-minspend { background: #fff7ed; color: #c2410c; }
+
+    /* ── ORDER SUMMARY ── */
+    .summary-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 20px;
+    }
+
+    .summary-items { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+
+    .summary-item {
+        display: grid;
+        grid-template-columns: 52px 1fr auto;
+        gap: 12px;
+        align-items: center;
+    }
+    .s-img {
+        width: 52px; height: 52px;
+        border-radius: 10px;
+        overflow: hidden;
+        background: linear-gradient(145deg, #e0e8e1, #c8d8ca);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px;
+        position: relative;
+        flex-shrink: 0;
+    }
+    .s-img img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; border-radius: 10px; }
+    .s-name { font-size: 14px; font-weight: 500; color: var(--ink); line-height: 1.3; }
+    .s-qty  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .s-price { font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 600; color: var(--sage-dark); white-space: nowrap; }
+
+    /* BOGO free-item highlight */
+    .bogo-free-tag {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        background: #fdf4ff;
+        color: #7c3aed;
+        padding: 1px 6px;
+        border-radius: 20px;
+        margin-left: 4px;
+        border: 1px solid rgba(124,58,237,0.25);
+    }
+
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        color: var(--muted);
+        padding: 6px 0;
+    }
+    .summary-row .row-label { display: flex; align-items: center; gap: 6px; }
+    .summary-row.discount .summary-val { color: var(--success); font-weight: 600; }
+    .summary-row.freeship-row .summary-val { color: var(--success); font-weight: 600; }
+    .summary-row.total {
+        padding-top: 14px;
+        margin-top: 4px;
+        border-top: 1px solid var(--border);
+        font-size: 16px;
+        color: var(--ink);
+        font-weight: 600;
+    }
+    .summary-row.total .summary-val {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 28px;
+        font-weight: 600;
+        color: var(--sage-dark);
+    }
+
+    .shipping-note {
+        background: rgba(90,122,94,0.08);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 12px;
+        color: var(--sage-dark);
+        margin: 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* ── PLACE ORDER ── */
+    .btn-place-order {
+        width: 100%;
+        height: 54px;
+        border: none;
+        border-radius: 12px;
+        background: var(--sage-dark);
+        color: white;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 15px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+        transition: all 0.25s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 4px;
+    }
+    .btn-place-order:hover {
+        background: var(--sage);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 28px rgba(61,89,64,0.25);
+    }
+    .btn-place-order:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--muted);
+        text-decoration: none;
+        margin-top: 14px;
+        transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--ink); }
+
+    @@media (max-width: 960px) {
+        .checkout-page { grid-template-columns: 1fr; padding: 32px 24px 60px; }
+        .right-col { position: static; }
+        .page-header { padding: 40px 24px 36px; }
+    }
+
+    @@media (max-width: 540px) {
+        .form-grid { grid-template-columns: 1fr; }
+        .form-group.full { grid-column: 1; }
+    }
+</style>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+    <div class="header-inner">
+        <div class="header-label">Secure Checkout</div>
+        <h1 class="header-title">Checkout</h1>
+        <p class="header-sub">@Model.CartItems.Count item@(Model.CartItems.Count != 1 ? "s" : "") · Total @Model.GrandTotal.ToString("N0") ฿</p>
+    </div>
+</div>
+
+<div class="checkout-page">
+
+    <!-- ── LEFT: SHIPPING ADDRESS ── -->
+    <div>
+        <div class="card">
+            <div class="card-title">
+                <i class="bi bi-geo-alt-fill"></i> Shipping Address
+            </div>
+
+            <form id="checkoutForm" method="post" asp-action="PlaceOrder" asp-controller="Order">
+                <!-- Hidden coupon fields passed through -->
+                <input type="hidden" name="couponCode"      value="@(Model.CouponValid ? Model.CouponCode : "")" />
+                <input type="hidden" name="discountAmount"  value="@Model.DiscountAmount" />
+                <input type="hidden" name="isFreeShipping"  value="@Model.IsFreeShipping.ToString().ToLower()" />
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Full Name <span>*</span></label>
+                        <input class="form-control" name="fullName" placeholder="John Doe"
+                               value="@Model.FullName" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number <span>*</span></label>
+                        <input class="form-control" name="phone" placeholder="+66 81 234 5678"
+                               value="@Model.Phone" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Postal Code <span>*</span></label>
+                        <input class="form-control" name="postalCode" placeholder="10110"
+                               value="@Model.PostalCode" maxlength="10" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Province <span>*</span></label>
+                        <input class="form-control" name="province" placeholder="Bangkok"
+                               value="@Model.Province" required />
+                    </div>
+                    <div class="form-group full">
+                        <label class="form-label">District / Sub-district <span>*</span></label>
+                        <input class="form-control" name="district" placeholder="Pathum Wan"
+                               value="@Model.District" required />
+                    </div>
+                    <div class="form-group full">
+                        <label class="form-label">Street Address <span>*</span></label>
+                        <input class="form-control" name="addressLine"
+                               placeholder="123 Sukhumvit Rd, Khlong Toei"
+                               value="@Model.AddressLine" required />
+                    </div>
+                </div>
+
+            </form><!-- #checkoutForm -->
+        </div>
+    </div>
+
+    <!-- ── RIGHT COLUMN ── -->
+    <div class="right-col">
+
+        <!-- Coupon Card -->
+        <div class="card">
+            <div class="card-title">
+                <i class="bi bi-ticket-perforated"></i> Discount Coupon
+            </div>
+
+            <form method="post" asp-action="ApplyCoupon" asp-controller="Order">
+                <!-- Pass current address values so they survive the round-trip -->
+                <input type="hidden" name="fullName"    id="h_fullName" />
+                <input type="hidden" name="phone"       id="h_phone" />
+                <input type="hidden" name="postalCode"  id="h_postalCode" />
+                <input type="hidden" name="province"    id="h_province" />
+                <input type="hidden" name="district"    id="h_district" />
+                <input type="hidden" name="addressLine" id="h_addressLine" />
+
+                <div class="coupon-row">
+                    <input class="coupon-input" name="couponCode"
+                           placeholder="Enter coupon code"
+                           value="@Model.CouponCode"
+                           oninput="this.value = this.value.toUpperCase()" />
+                    <button type="submit" class="btn-apply"
+                            onclick="syncAddressToHidden()">Apply</button>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.CouponMessage))
+                {
+                    <div class="coupon-msg @(Model.CouponValid ? "success" : "error")">
+                        <i class="bi bi-@(Model.CouponValid ? "check-circle-fill" : "x-circle-fill")" style="flex-shrink:0;margin-top:1px"></i>
+                        <div>
+                            @* Show coupon-type badge when valid *@
+                            @if (Model.CouponValid)
+                            {
+                                @* We rely on IsFreeShipping flag and DiscountAmount to infer display *@
+                                @if (Model.IsFreeShipping)
+                                {
+                                    <span class="coupon-badge badge-freeship">🚚 FREE SHIP</span><br/>
+                                }
+                                else if (Model.DiscountAmount > 0)
+                                {
+                                    bool isPct = Model.CouponMessage.Contains("%");
+                                    bool isBogo = Model.CouponMessage.Contains("แถม");
+                                    if (isBogo)      { <span class="coupon-badge badge-bogo">🎁 BOGO</span><br/> }
+                                    else if (isPct)  { <span class="coupon-badge badge-percent">% PERCENT</span><br/> }
+                                    else             { <span class="coupon-badge badge-fixed">฿ FIXED</span><br/> }
+                                }
+                            }
+                            @Model.CouponMessage
+                        </div>
+                    </div>
+                }
+            </form>
+        </div>
+
+        <!-- Order Summary Card -->
+        <div class="card">
+            <div class="summary-title">Order Summary</div>
+
+            <div class="summary-items">
+                @{
+                    // For BOGO: find the cheapest item to mark as "free"
+                    string? bogoFreeOptionId = null;
+                    if (Model.CouponValid && Model.DiscountAmount > 0 && Model.CouponMessage.Contains("แถม"))
+                    {
+                        var cheapest = Model.CartItems
+                            .OrderBy(i => i.ProductOption?.ProductPrice ?? 0)
+                            .FirstOrDefault();
+                        bogoFreeOptionId = cheapest?.ProductOptionId;
+                    }
+                }
+
+                @foreach (var item in Model.CartItems)
+                {
+                    var opt  = item.ProductOption;
+                    var prod = opt?.Product;
+
+                    var imgType = prod?.ProductType?.ToLower() ?? "";
+                    bool hasProductImg = !string.IsNullOrEmpty(prod?.ProductImage) && prod.ProductImage != "img";
+                    string defaultImgUrl = imgType.Contains("coffee")
+                        ? Url.Content("~/images/coffee-beans.jpg")
+                        : imgType.Contains("matcha")
+                        ? Url.Content("~/images/matcha-powder.jpg")
+                        : Url.Content("~/images/brewing-equipment.jpg");
+                    string imgUrl = hasProductImg ? prod.ProductImage : defaultImgUrl;
+
+                    string emoji = imgType.Contains("coffee") ? "☕"
+                                 : imgType.Contains("matcha") ? "🍵"
+                                 : "🔧";
+
+                    decimal lineTotal = (opt?.ProductPrice ?? 0) * (item.CartItemAmount ?? 1);
+                    bool isBogoCheapest = bogoFreeOptionId != null && item.ProductOptionId == bogoFreeOptionId;
+
+                    <div class="summary-item">
+                        <div class="s-img">
+                            <img src="@imgUrl" alt="@prod?.ProductName" onerror="this.src='@defaultImgUrl'" />
+                            @if (!hasProductImg)
+                            {
+                                <span>@emoji</span>
+                            }
+                        </div>
+                        <div>
+                            <div class="s-name">
+                                @prod?.ProductName
+                                @if (isBogoCheapest)
+                                {
+                                    <span class="bogo-free-tag">FREE ×1</span>
+                                }
+                            </div>
+                            <div class="s-qty">@opt?.ProductPrice?.ToString("N0") ฿ × @item.CartItemAmount</div>
+                        </div>
+                        <div class="s-price">@lineTotal.ToString("N0") ฿</div>
+                    </div>
+                }
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Subtotal -->
+            <div class="summary-row">
+                <span>Subtotal</span>
+                <span class="summary-val">@Model.Subtotal.ToString("N0") ฿</span>
+            </div>
+
+            <!-- Shipping row — strikethrough when FREESHIP coupon applied -->
+            <div class="summary-row @(Model.IsFreeShipping ? "freeship-row" : "")">
+                <span class="row-label">
+                    Shipping
+                    @if (Model.IsFreeShipping)
+                    {
+                        <span class="coupon-badge badge-freeship" style="margin:0">🚚 FREE</span>
+                    }
+                </span>
+                @if (Model.IsFreeShipping)
+                {
+                    <span class="summary-val" style="text-decoration:line-through;color:var(--muted);font-size:12px">
+                        @CheckoutViewModel.BaseShippingFee.ToString("N0") ฿
+                    </span>
+                }
+                else
+                {
+                    <span class="summary-val">@(Model.ShippingFee == 0 ? "Free" : Model.ShippingFee.ToString("N0") + " ฿")</span>
+                }
+            </div>
+
+            @if (!Model.IsFreeShipping && Model.ShippingFee > 0)
+            {
+                decimal needed = CheckoutViewModel.FreeShippingThreshold - Model.Subtotal;
+                if (needed > 0)
+                {
+                    <div class="shipping-note">
+                        🌿 Add @needed.ToString("N0") ฿ more for free shipping!
+                    </div>
+                }
+            }
+            else if (!Model.IsFreeShipping && Model.ShippingFee == 0)
+            {
+                <div class="shipping-note">✓ You qualify for free shipping!</div>
+            }
+
+            <!-- Discount row (non-FREESHIP types: PERCENT, FIXED, BOGO, MINSPEND) -->
+            @if (Model.CouponValid && Model.DiscountAmount > 0 && !Model.IsFreeShipping)
+            {
+                <div class="summary-row discount">
+                    <span class="row-label">
+                        <i class="bi bi-tag-fill" style="font-size:11px"></i>
+                        @Model.CouponCode
+                    </span>
+                    <span class="summary-val">−@Model.DiscountAmount.ToString("N0") ฿</span>
+                </div>
+            }
+
+            <!-- Grand total -->
+            <div class="summary-row total">
+                <span>Total</span>
+                <span class="summary-val">@Model.GrandTotal.ToString("N0") ฿</span>
+            </div>
+
+            <!-- Place Order button submits the address form -->
+            <button class="btn-place-order" onclick="submitOrder()">
+                <i class="bi bi-bag-check-fill"></i> Place Order
+            </button>
+
+            <a href="/Cart" class="back-link">
+                <i class="bi bi-arrow-left"></i> Back to Cart
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // Sync address inputs into the coupon form's hidden fields before submitting
+    function syncAddressToHidden() {
+        document.getElementById('h_fullName').value    = document.querySelector('[name="fullName"]').value;
+        document.getElementById('h_phone').value       = document.querySelector('[name="phone"]').value;
+        document.getElementById('h_postalCode').value  = document.querySelector('[name="postalCode"]').value;
+        document.getElementById('h_province').value    = document.querySelector('[name="province"]').value;
+        document.getElementById('h_district').value    = document.querySelector('[name="district"]').value;
+        document.getElementById('h_addressLine').value = document.querySelector('[name="addressLine"]').value;
+    }
+
+    function submitOrder() {
+        const form = document.getElementById('checkoutForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        form.submit();
+    }
+</script>

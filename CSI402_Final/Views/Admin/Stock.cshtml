@@ -1,0 +1,97 @@
+@using CSI402_Final.Models.DB
+@model IEnumerable<ProductOption>
+
+@{
+    ViewData["Title"] = "Stock Management";
+    ViewData["ActivePage"] = "Stock";
+    Layout = "~/Views/Shared/_Navbar/_AdminNavbar.cshtml";
+    
+    int outOfStock = Model.Count(o => o.ProductStock == 0);
+    int lowStock = Model.Count(o => o.ProductStock > 0 && o.ProductStock <= 10);
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<div style="display:flex;gap:12px;margin-bottom:20px">
+    <div class="card" style="flex:1;margin-bottom:0;padding:16px 20px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted)">Total Options
+        </div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600">@Model.Count()</div>
+    </div>
+    <div class="card" style="flex:1;margin-bottom:0;padding:16px 20px;border-color:#f5c6c3">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--danger)">Out of Stock
+        </div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:var(--danger)">
+            @outOfStock</div>
+        </div>
+        <div class="card" style="flex:1;margin-bottom:0;padding:16px 20px;border-color:#ffe082">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--warning)">Low Stock (≤10)
+            </div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:var(--warning)">
+                @lowStock</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">All Product Options</div>
+                <span style="font-size:13px;color:var(--muted)">Sorted by stock (lowest first)</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Type</th>
+                        <th>Unit / Size</th>
+                        <th>Price</th>
+                        <th>Current Stock</th>
+                        <th>Set Stock</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var opt in Model.OrderBy(o => o.ProductStock))
+                    {
+                        var p = opt.Product;
+                        <tr>
+                            <td>
+                                <div style="font-weight:500">@(p?.ProductName ?? "—")</div>
+                                <div style="font-size:11px;color:var(--muted)">
+                                    @(p?.ProductId != null
+                                        ? p.ProductId.Substring(0, Math.Min(8, p.ProductId.Length))
+                                        : "—")…
+                                </div>
+                            </td>
+                            <td>
+                                @if (p != null)
+                                {
+                                    <span
+                                        class="badge @(p.ProductType=="coffee"?"badge-coffee":p.ProductType=="matcha"?"badge-matcha":"badge-equip")">
+                                        @p.ProductType
+                                    </span>
+                                }
+                            </td>
+                            <td>@opt.ProductUnit</td>
+                            <td>฿@String.Format("{0:N0}", opt.ProductPrice)</td>
+                            <td>
+                                <span
+                                    style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;
+                                    color:@(opt.ProductStock==0?"var(--danger)":opt.ProductStock<=10?"var(--warning)":"var(--success)")">
+                                    @opt.ProductStock
+                                </span>
+                            </td>
+                            <td>
+                                <form method="post" action="/Admin/UpdateStock" style="display:flex;gap:8px;align-items:center">
+                                    <input type="hidden" name="optionId" value="@opt.ProductOptionId" />
+                                    <input type="number" name="stock" class="form-control" min="0" style="width:90px;height:36px"
+                                           placeholder="New qty" required />
+                                    <button type="submit" class="btn btn-primary btn-sm">Set</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>

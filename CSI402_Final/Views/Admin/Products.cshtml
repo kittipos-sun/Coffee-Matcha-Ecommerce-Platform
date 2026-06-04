@@ -1,0 +1,281 @@
+@using CSI402_Final.Models.DB
+@model IEnumerable<Product>
+
+@{
+    ViewData["Title"] = "Product Management";
+    ViewData["ActivePage"] = "Products";
+    Layout = "~/Views/Shared/_Navbar/_AdminNavbar.cshtml";
+
+    var categories = ViewBag.Categories as IEnumerable<ProductCategory> ?? Enumerable.Empty<ProductCategory>();
+}
+
+<style>
+    /* ── Toolbar ── */
+    .toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
+    .toolbar input[type=text] { flex:1; min-width:220px; max-width:320px; }
+    .type-tabs { display:flex; gap:6px; }
+    .type-tab {
+        padding:7px 18px; border-radius:20px; font-size:13px; font-weight:500;
+        border:1.5px solid var(--border); background:white; color:var(--muted);
+        cursor:pointer; transition:all .18s; user-select:none;
+    }
+    .type-tab:hover { border-color:var(--sage-dark); color:var(--sage-dark); }
+    .type-tab.active         { background:var(--sage-dark,#4a7c59); border-color:var(--sage-dark,#4a7c59); color:white; }
+    .type-tab.active-coffee  { background:#6b4c2a !important; border-color:#6b4c2a !important; }
+    .type-tab.active-matcha  { background:#4a7c59 !important; border-color:#4a7c59 !important; }
+    .type-tab.active-equip   { background:#4a5568 !important; border-color:#4a5568 !important; }
+
+    /* ── Card grid ── */
+    .product-grid {
+        display:grid;
+        grid-template-columns:repeat(auto-fill, minmax(230px, 1fr));
+        gap:16px;
+    }
+    .product-card {
+        background:white; border:1px solid var(--border,#e5e7eb);
+        border-radius:16px; overflow:hidden;
+        transition:box-shadow .18s, transform .18s;
+        display:flex; flex-direction:column;
+    }
+    .product-card:hover { box-shadow:0 6px 24px rgba(0,0,0,.09); transform:translateY(-2px); }
+    .product-card.hidden { display:none !important; }
+
+    .card-thumb {
+        width:100%; height:136px;
+        background:var(--cream,#f9f5ef);
+        display:flex; align-items:center; justify-content:center;
+        font-size:44px;
+    }
+    .card-thumb img { width:100%; height:136px; object-fit:cover; display:block; }
+    .card-body { padding:14px 16px 10px; flex:1; display:flex; flex-direction:column; gap:5px; }
+    .card-name { font-weight:600; font-size:14px; color:var(--ink,#1a1a1a); line-height:1.3; }
+    .card-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:2px; }
+    .card-price { font-size:12px; color:var(--muted,#888); margin-top:2px; }
+    .card-actions { display:flex; gap:6px; padding:10px 14px 14px; border-top:1px solid var(--border,#e5e7eb); }
+    .card-actions .btn { flex:1; text-align:center; font-size:12px; }
+    .card-actions form { flex:1; }
+    .card-actions form .btn { width:100%; }
+
+    #noResults {
+        display:none; grid-column:1/-1;
+        text-align:center; padding:60px 20px;
+        color:var(--muted); font-size:14px;
+    }
+    .count-label { font-size:13px; color:var(--muted); font-weight:400; font-family:'DM Sans',sans-serif; }
+</style>
+
+@if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+@if (TempData["Error"]   != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">All Products <span id="countLabel" class="count-label"></span></div>
+        <button class="btn btn-primary" onclick="openModal('addModal')">+ Add Product</button>
+    </div>
+
+    <!-- Toolbar: Search + Type filter -->
+    <div class="toolbar">
+        <input type="text" id="searchInput" class="form-control"
+               placeholder="Search product name…" oninput="applyFilters()" />
+        <div class="type-tabs">
+            <button class="type-tab active" data-type="all"       onclick="setType(this,'all')">All</button>
+            <button class="type-tab"        data-type="coffee"    onclick="setType(this,'coffee')">Coffee</button>
+            <button class="type-tab"        data-type="matcha"    onclick="setType(this,'matcha')">Matcha</button>
+            <button class="type-tab"        data-type="equipment" onclick="setType(this,'equipment')">Equipment</button>
+        </div>
+    </div>
+
+    <!-- Card Grid -->
+    <div class="product-grid" id="productGrid">
+        @foreach (var p in Model)
+        {
+            var opts    = p.ProductOptions;
+            var minP    = opts.Any() ? opts.Min(o => o.ProductPrice) : null;
+            var maxP    = opts.Any() ? opts.Max(o => o.ProductPrice) : null;
+            var ptype   = (p.ProductType ?? "").ToLower();
+            var emoji   = ptype == "coffee" ? "☕" : ptype == "matcha" ? "🍵" : "🔧";
+            var badgeCls= ptype == "coffee" ? "badge-coffee" : ptype == "matcha" ? "badge-matcha" : "badge-equip";
+
+            <div class="product-card"
+                 data-type="@ptype"
+                 data-name="@(p.ProductName ?? "").ToLower()">
+
+                <div class="card-thumb">
+                    @if (!string.IsNullOrEmpty(p.ProductImage) && p.ProductImage != "img")
+                    {
+                        <img src="@p.ProductImage" alt="@p.ProductName" />
+                    }
+                    else
+                    {
+                        <span>@emoji</span>
+                    }
+                </div>
+
+                <div class="card-body">
+                    <div class="card-name">@p.ProductName</div>
+                    <div class="card-meta">
+                        <span class="badge @badgeCls" style="font-size:10px">@p.ProductType</span>
+                        <span style="font-size:11px;color:var(--muted)">@(p.Category?.CategoryName ?? "—")</span>
+                    </div>
+                    <div class="card-price">
+                        @opts.Count option@(opts.Count != 1 ? "s" : "")
+                        @if (minP.HasValue)
+                        {
+                            <span style="margin-left:4px">·
+                                ฿@String.Format("{0:N0}", minP)@(minP != maxP ? $" – ฿{maxP:N0}" : "")
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <div class="card-actions">
+                    <a href="/Admin/ProductDetail/@p.ProductId" class="btn btn-outline btn-sm">Detail</a>
+                    <form method="post" action="/Admin/DeleteProduct"
+                          onsubmit="return confirm('Delete product and all its options?')">
+                        <input type="hidden" name="productId" value="@p.ProductId" />
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </div>
+            </div>
+        }
+        <div id="noResults">No products match your search.</div>
+    </div>
+</div>
+
+<!-- ADD PRODUCT MODAL -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal-box">
+        <div class="modal-title">Add New Product</div>
+        <form method="post" action="/Admin/AddProduct" enctype="multipart/form-data">
+
+            <div class="grid-2">
+                <div class="form-group col-span-2">
+                    <label>Product Name</label>
+                    <input name="ProductName" class="form-control" required placeholder="e.g. Ethiopia Yirgacheffe" />
+                </div>
+                <div class="form-group">
+                    <label>Product Type</label>
+                    <select name="ProductType" class="form-control" onchange="showTypeDetail(this.value,'add')" required>
+                        <option value="">— Select type —</option>
+                        <option value="coffee">Coffee</option>
+                        <option value="matcha">Matcha</option>
+                        <option value="equipment">Equipment</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select name="CategoryId" class="form-control" required>
+                        <option value="">— Select category —</option>
+                        @foreach (var c in categories)
+                        {
+                            <option value="@c.CategoryId">@c.CategoryName</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-span-2">
+                    <label>Description</label>
+                    <textarea name="ProductDescription" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="form-group col-span-2">
+                    <label>Product Image <span style="font-weight:400;color:var(--muted)">(ไม่บังคับ)</span></label>
+                    <input name="ProductImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+                           class="form-control" onchange="previewAddImg(this)" />
+                    <div style="font-size:11px;color:var(--muted);margin-top:4px">JPG · PNG · WebP · GIF &nbsp;|&nbsp; แนะนำไม่เกิน 2 MB</div>
+                    <div id="addImgPreviewWrap" style="margin-top:10px;display:none">
+                        <img id="addImgPreview" style="height:80px;border-radius:8px;object-fit:cover;border:1px solid var(--border)" />
+                    </div>
+                </div>
+            </div>
+
+            <div id="add-coffee" class="detail-panel">
+                <div class="detail-panel-title">☕ Coffee Details</div>
+                <div class="grid-2">
+                    <div class="form-group"><label>Origin</label><input name="CoffeeOrigin" class="form-control" /></div>
+                    <div class="form-group"><label>Roast Level</label>
+                        <select name="RoastLevel" class="form-control">
+                            <option value="">—</option>
+                            <option>Light</option><option>Medium</option><option>Medium-Dark</option><option>Dark</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Flavor Notes</label><input name="FlavorNote" class="form-control" /></div>
+                    <div class="form-group"><label>Process</label><input name="CoffeeProcess" class="form-control" /></div>
+                </div>
+            </div>
+
+            <div id="add-matcha" class="detail-panel">
+                <div class="detail-panel-title">🍵 Matcha Details</div>
+                <div class="grid-2">
+                    <div class="form-group"><label>Grade</label><input name="MatchaGrade" class="form-control" /></div>
+                    <div class="form-group"><label>Origin</label><input name="MatchaOrigin" class="form-control" /></div>
+                    <div class="form-group"><label>Color Level</label><input name="ColorLevel" class="form-control" /></div>
+                </div>
+            </div>
+
+            <div id="add-equipment" class="detail-panel">
+                <div class="detail-panel-title">🔧 Equipment Details</div>
+                <div class="grid-2">
+                    <div class="form-group"><label>Brand</label><input name="Brand" class="form-control" /></div>
+                    <div class="form-group"><label>Equipment Type</label><input name="EquipmentType" class="form-control" /></div>
+                    <div class="form-group"><label>Material</label><input name="Material" class="form-control" /></div>
+                </div>
+            </div>
+
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+                <div style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Initial Product Option</div>
+                <div class="grid-2">
+                    <div class="form-group"><label>Unit / Size</label><input name="OptionUnit" class="form-control" placeholder="e.g. 250g" required /></div>
+                    <div class="form-group"><label>Price (฿)</label><input name="OptionPrice" type="number" step="0.01" min="0" class="form-control" required /></div>
+                    <div class="form-group"><label>Stock</label><input name="OptionStock" type="number" min="0" class="form-control" value="0" required /></div>
+                    <div class="form-group"><label>Amount per unit</label><input name="OptionAmount" type="number" min="1" class="form-control" value="1" /></div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('addModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Product</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let currentType = 'all';
+
+function setType(btn, type) {
+    currentType = type;
+    document.querySelectorAll('.type-tab').forEach(t => t.className = 'type-tab');
+    btn.classList.add('active');
+    if (type === 'coffee')    btn.classList.add('active-coffee');
+    if (type === 'matcha')    btn.classList.add('active-matcha');
+    if (type === 'equipment') btn.classList.add('active-equip');
+    applyFilters();
+}
+
+function applyFilters() {
+    const q     = document.getElementById('searchInput').value.trim().toLowerCase();
+    const cards = document.querySelectorAll('#productGrid .product-card');
+    let visible = 0;
+    cards.forEach(card => {
+        const matchType = currentType === 'all' || card.dataset.type === currentType;
+        const matchName = !q || card.dataset.name.includes(q);
+        if (matchType && matchName) { card.classList.remove('hidden'); visible++; }
+        else                        { card.classList.add('hidden'); }
+    });
+    document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
+    document.getElementById('countLabel').textContent  = `(${visible})`;
+}
+
+applyFilters();
+
+function previewAddImg(input) {
+    if (!input.files || !input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const wrap = document.getElementById('addImgPreviewWrap');
+        const img  = document.getElementById('addImgPreview');
+        img.src = e.target.result;
+        wrap.style.display = 'block';
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+</script>
