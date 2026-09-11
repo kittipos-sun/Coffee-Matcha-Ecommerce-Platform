@@ -55,7 +55,10 @@ public partial class Csi402FinalContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
-            .UseCollation("utf8mb4_0900_ai_ci")
+            // utf8mb4_0900_ai_ci is MySQL-8-only and prevents the local
+            // MariaDB/XAMPP instance from creating the schema. This collation
+            // is supported by both MySQL and MariaDB.
+            .UseCollation("utf8mb4_unicode_ci")
             .HasCharSet("utf8mb4");
 
         modelBuilder.Entity<Address>(entity =>
